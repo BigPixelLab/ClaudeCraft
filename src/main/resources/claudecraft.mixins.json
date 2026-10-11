@@ -1,0 +1,19 @@
+{
+	"required": true,
+	"package": "k4k.claudecraft.mixin",
+	"compatibilityLevel": "JAVA_17",
+	"injectors": {
+		"defaultRequire": 1
+	},
+	"overwrites": {
+		"requireAnnotations": true
+	},
+	"mixins": [
+		"ServerCommandSourceAccessor"
+	],
+	"client": [
+		"client.CameraAccessor",
+		"client.GameRendererMixin",
+		"client.WorldRendererMixin"
+	]
+}
