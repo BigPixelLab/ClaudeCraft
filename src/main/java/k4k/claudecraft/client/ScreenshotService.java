@@ -5,6 +5,7 @@ import k4k.claudecraft.ClaudeCraftException;
 import k4k.claudecraft.agent.AgentEntity;
 import k4k.claudecraft.mixin.client.CameraAccessor;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.option.Perspective;
 import net.minecraft.client.render.Camera;
 import net.minecraft.client.texture.NativeImage;
@@ -33,6 +34,10 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  * All methods except {@link #request} run on the render thread.
  */
 public final class ScreenshotService {
+	/** Orange of the mod icon, used for the "camera taken" vignette. */
+	private static final int INDICATOR_RGB = 0xEE8A3C;
+	private static final float INDICATOR_MAX_ALPHA = 0.6f;
+	private static final long INDICATOR_FADE_IN_MILLIS = 150;
 	/** Sodium and vanilla rebuild the visible chunk list over a few frames after a camera jump. */
 	private static final int MIN_WARMUP_FRAMES = 3;
 	private static final Queue<Request> QUEUE = new ConcurrentLinkedQueue<>();
@@ -40,6 +45,7 @@ public final class ScreenshotService {
 	@Nullable
 	private static Request active;
 	private static int framesRendered;
+	private static long activeSince;
 	private static long captureAfter;
 	@Nullable
 	private static Entity savedCamera;
@@ -168,6 +174,36 @@ public final class ScreenshotService {
 	}
 
 	/**
+	 * Draws a square orange vignette while the camera belongs to an agent, so the host knows why their view changed.
+	 * It is drawn with the GUI, after the frame for the screenshot has already been captured, so it never shows up
+	 * in screenshots.
+	 *
+	 * @param context GUI draw context of the current frame
+	 */
+	public static void renderIndicator(DrawContext context) {
+		if (!isCapturingFromAgent()) {
+			return;
+		}
+		int width = context.getScaledWindowWidth();
+		int height = context.getScaledWindowHeight();
+		int thickness = Math.max(12, Math.min(width, height) / 7);
+		float fade = Math.min(1f, (Util.getMeasuringTimeMs() - activeSince) / (float) INDICATOR_FADE_IN_MILLIS);
+		for (int i = 0; i < thickness; i++) {
+			float falloff = 1f - (float) i / thickness;
+			int alpha = Math.round(INDICATOR_MAX_ALPHA * falloff * falloff * fade * 255);
+			if (alpha == 0) {
+				continue;
+			}
+			int color = alpha << 24 | INDICATOR_RGB;
+			// One-pixel frame at inset i; stacked frames with decreasing alpha form a square gradient
+			context.fill(i, i, width - i, i + 1, color);
+			context.fill(i, height - i - 1, width - i, height - i, color);
+			context.fill(i, i + 1, i + 1, height - i - 1, color);
+			context.fill(width - i - 1, i + 1, width - i, height - i - 1, color);
+		}
+	}
+
+	/**
 	 * @param uuid entity UUID
 	 * @return whether the entity must not be rendered because the camera is inside it
 	 */
@@ -223,6 +259,7 @@ public final class ScreenshotService {
 		client.options.setPerspective(Perspective.FIRST_PERSON);
 		active = request;
 		framesRendered = 0;
+		activeSince = Util.getMeasuringTimeMs();
 		captureAfter = Util.getMeasuringTimeMs() + request.warmupMillis();
 	}
 

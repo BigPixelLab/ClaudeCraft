@@ -1,9 +1,11 @@
 package k4k.claudecraft.mixin.client;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
+import com.llamalad7.mixinextras.sugar.Local;
 import k4k.claudecraft.client.PauseControl;
 import k4k.claudecraft.client.ScreenshotService;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.render.Camera;
 import net.minecraft.client.render.GameRenderer;
 import org.spongepowered.asm.mixin.Final;
@@ -40,6 +42,14 @@ abstract class GameRendererMixin {
 	)
 	private void claudecraft$onWorldRendered(float tickDelta, long startTime, boolean tick, CallbackInfo ci) {
 		ScreenshotService.onWorldRendered(client);
+	}
+
+	/**
+	 * Draws the "camera taken by an agent" vignette on top of the GUI, after the screenshot frame was captured.
+	 */
+	@Inject(method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/DrawContext;draw()V"))
+	private void claudecraft$drawCaptureIndicator(float tickDelta, long startTime, boolean tick, CallbackInfo ci, @Local DrawContext drawContext) {
+		ScreenshotService.renderIndicator(drawContext);
 	}
 
 	/**

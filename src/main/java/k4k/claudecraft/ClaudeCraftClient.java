@@ -18,6 +18,7 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry;
+import net.fabricmc.loader.api.FabricLoader;
 
 import java.io.IOException;
 import java.util.List;
@@ -42,7 +43,10 @@ public class ClaudeCraftClient implements ClientModInitializer {
 		WorldRenderEvents.AFTER_ENTITIES.register(NoteRenderer::render);
 
 		ClaudeCraftConfig config = ClaudeCraftConfig.get();
-		McpHttpServer server = new McpHttpServer(config.token, PauseControl::acquire);
+		String version = FabricLoader.getInstance().getModContainer(ClaudeCraft.MOD_ID)
+			.map(mod -> mod.getMetadata().getVersion().getFriendlyString())
+			.orElse("unknown");
+		McpHttpServer server = new McpHttpServer(version, config.token, PauseControl::acquire);
 		CommandTools.register(server);
 		RegistryTools.register(server);
 		AgentTools.register(server);

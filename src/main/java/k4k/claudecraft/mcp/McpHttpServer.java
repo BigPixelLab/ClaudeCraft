@@ -42,6 +42,7 @@ public final class McpHttpServer {
 
 	private final Map<String, McpTool> tools = new LinkedHashMap<>();
 	private final Map<String, McpSession> sessions = new ConcurrentHashMap<>();
+	private final String version;
 	private final String token;
 	private final RunningGameGuard runningGameGuard;
 	@Nullable
@@ -62,10 +63,12 @@ public final class McpHttpServer {
 	}
 
 	/**
+	 * @param version          mod version reported to clients
 	 * @param token            bearer token required from clients; empty disables authentication
 	 * @param runningGameGuard keeps the game unpaused for tools marked {@link McpTool#needsRunningGame}
 	 */
-	public McpHttpServer(String token, RunningGameGuard runningGameGuard) {
+	public McpHttpServer(String version, String token, RunningGameGuard runningGameGuard) {
+		this.version = version;
 		this.token = token;
 		this.runningGameGuard = runningGameGuard;
 	}
@@ -234,7 +237,7 @@ public final class McpHttpServer {
 		result.add("capabilities", capabilities);
 		JsonObject serverInfo = new JsonObject();
 		serverInfo.addProperty("name", "claudecraft");
-		serverInfo.addProperty("version", "0.1.0");
+		serverInfo.addProperty("version", version);
 		result.add("serverInfo", serverInfo);
 		result.addProperty("instructions", """
 			Controls the Minecraft world hosted by this game client (singleplayer or LAN host).
