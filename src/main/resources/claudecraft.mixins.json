@@ -13,7 +13,6 @@
 	],
 	"client": [
 		"client.CameraAccessor",
-		"client.GameRendererMixin",
-		"client.WorldRendererMixin"
+		"client.GameRendererMixin"
 	]
 }

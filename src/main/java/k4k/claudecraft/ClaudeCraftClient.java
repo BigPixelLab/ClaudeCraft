@@ -4,6 +4,7 @@ import k4k.claudecraft.client.AgentEntityRenderer;
 import k4k.claudecraft.client.NoteEditScreen;
 import k4k.claudecraft.client.NoteRenderer;
 import k4k.claudecraft.client.PauseControl;
+import k4k.claudecraft.client.ScreenshotService;
 import k4k.claudecraft.item.QuillInteractions;
 import k4k.claudecraft.mcp.McpHttpServer;
 import k4k.claudecraft.note.NoteNetworking;
@@ -41,6 +42,7 @@ public class ClaudeCraftClient implements ClientModInitializer {
 		});
 		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> client.execute(() -> NoteRenderer.setNotes(List.of())));
 		WorldRenderEvents.AFTER_ENTITIES.register(NoteRenderer::render);
+		WorldRenderEvents.AFTER_ENTITIES.register(ScreenshotService::renderHostPlayer);
 
 		ClaudeCraftConfig config = ClaudeCraftConfig.get();
 		String version = FabricLoader.getInstance().getModContainer(ClaudeCraft.MOD_ID)

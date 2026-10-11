@@ -4,7 +4,11 @@ import k4k.claudecraft.ClaudeCraft;
 import k4k.claudecraft.ClaudeCraftException;
 import k4k.claudecraft.agent.AgentEntity;
 import k4k.claudecraft.mixin.client.CameraAccessor;
+import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.client.render.VertexConsumerProvider;
+import net.minecraft.client.render.entity.EntityRenderDispatcher;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.option.Perspective;
 import net.minecraft.client.render.Camera;
@@ -14,6 +18,7 @@ import net.minecraft.entity.Entity;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.util.Util;
 import net.minecraft.util.math.ChunkSectionPos;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
@@ -201,6 +206,36 @@ public final class ScreenshotService {
 			context.fill(i, i + 1, i + 1, height - i - 1, color);
 			context.fill(width - i - 1, i + 1, width - i, height - i - 1, color);
 		}
+	}
+
+	/**
+	 * Draws the host player while the camera belongs to an agent; registered for
+	 * {@code WorldRenderEvents.AFTER_ENTITIES}. Vanilla never renders the local player unless the camera is
+	 * attached to it, which would make the host invisible from the agent's point of view.
+	 *
+	 * @param context world render context
+	 */
+	public static void renderHostPlayer(WorldRenderContext context) {
+		MinecraftClient client = MinecraftClient.getInstance();
+		ClientPlayerEntity player = client.player;
+		VertexConsumerProvider consumers = context.consumers();
+		if (!isCapturingFromAgent() || player == null || player.isSpectator() || consumers == null) {
+			return;
+		}
+		float tickDelta = context.tickDelta();
+		Vec3d camera = context.camera().getPos();
+		EntityRenderDispatcher dispatcher = client.getEntityRenderDispatcher();
+		dispatcher.render(
+			player,
+			MathHelper.lerp(tickDelta, player.lastRenderX, player.getX()) - camera.x,
+			MathHelper.lerp(tickDelta, player.lastRenderY, player.getY()) - camera.y,
+			MathHelper.lerp(tickDelta, player.lastRenderZ, player.getZ()) - camera.z,
+			MathHelper.lerp(tickDelta, player.prevYaw, player.getYaw()),
+			tickDelta,
+			context.matrixStack(),
+			consumers,
+			dispatcher.getLight(player, tickDelta)
+		);
 	}
 
 	/**
