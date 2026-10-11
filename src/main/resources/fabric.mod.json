@@ -7,7 +7,7 @@
 	"authors": [
 		"Kuchukov"
 	],
-	"license": "All-Rights-Reserved",
+	"license": "MIT",
 	"environment": "*",
 	"entrypoints": {
 		"main": [
