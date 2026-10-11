@@ -8,6 +8,7 @@
 		"Kuchukov"
 	],
 	"license": "MIT",
+	"icon": "assets/claudecraft/icon.png",
 	"environment": "*",
 	"entrypoints": {
 		"main": [
