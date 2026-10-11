@@ -34,6 +34,11 @@ import java.util.UUID;
 public final class NoteRenderer {
 	private static final double LABEL_DISTANCE = 48;
 	private static final float LABEL_SCALE = 0.025f;
+	private static final int LABEL_COLOR = 0xFFFFA040;
+	/** A quarter of {@link #LABEL_COLOR}, like vanilla text shadows. */
+	private static final int LABEL_SHADOW_COLOR = 0xFF3F2810;
+	/** Distance from a label to its shadow, away from the camera, in label units (1/40 of a block). */
+	private static final float SHADOW_DEPTH = 1f;
 
 	private static List<NoteNetworking.NoteView> notes = List.of();
 
@@ -127,7 +132,10 @@ public final class NoteRenderer {
 	}
 
 	/**
-	 * Draws a camera-facing label that stays readable through blocks, like a name tag.
+	 * Draws a camera-facing label with a text shadow in a single normal text pass.
+	 * <p>
+	 * A name-tag style label (see-through pass with a background, then a normal pass) breaks under shader packs:
+	 * Iris reorders the text layers, so the background covers the text. One depth-tested pass renders correctly.
 	 */
 	private static void drawLabel(TextRenderer textRenderer, WorldRenderContext context, MatrixStack matrices,
 								  VertexConsumerProvider consumers, Vec3d camera, Label label) {
@@ -137,10 +145,12 @@ public final class NoteRenderer {
 		matrices.scale(-LABEL_SCALE, -LABEL_SCALE, LABEL_SCALE);
 		Matrix4f matrix = matrices.peek().getPositionMatrix();
 		float x = -textRenderer.getWidth(label.text()) / 2f;
-		int background = (int) (MinecraftClient.getInstance().options.getTextBackgroundOpacity(0.25f) * 255) << 24;
-		textRenderer.draw(label.text(), x, 0, 0x20FFFFFF, false, matrix, consumers,
-			TextRenderer.TextLayerType.SEE_THROUGH, background, LightmapTextureManager.MAX_LIGHT_COORDINATE);
-		textRenderer.draw(label.text(), x, 0, 0xFFFFA040, false, matrix, consumers,
+		// The built-in shadow shifts the text by +z, which is towards the viewer only in GUI space; in the world +z points
+		// away from the camera, so the shadow ended up in front of the text. Draw our own shadow behind it instead
+		Matrix4f shadowMatrix = new Matrix4f(matrix).translate(0, 0, SHADOW_DEPTH);
+		textRenderer.draw(label.text(), x + 1, 1, LABEL_SHADOW_COLOR, false, shadowMatrix, consumers,
+			TextRenderer.TextLayerType.NORMAL, 0, LightmapTextureManager.MAX_LIGHT_COORDINATE);
+		textRenderer.draw(label.text(), x, 0, LABEL_COLOR, false, matrix, consumers,
 			TextRenderer.TextLayerType.NORMAL, 0, LightmapTextureManager.MAX_LIGHT_COORDINATE);
 		matrices.pop();
 	}
