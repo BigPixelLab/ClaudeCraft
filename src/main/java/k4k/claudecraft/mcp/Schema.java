@@ -68,6 +68,16 @@ public final class Schema {
 	}
 
 	/**
+	 * @param name        property name
+	 * @param description property description
+	 * @param isRequired  whether the property is required
+	 * @return this builder
+	 */
+	public Schema bool(String name, String description, boolean isRequired) {
+		return property(name, "boolean", description, isRequired);
+	}
+
+	/**
 	 * @return the finished schema
 	 */
 	public JsonObject build() {

@@ -27,6 +27,8 @@ import net.minecraft.util.math.BlockBox;
 public class NoteEditScreen extends Screen {
 	private static final int MAX_WIDTH = 320;
 	private static final int BOX_HEIGHT = 100;
+	/** Room under the text box for its character counter. */
+	private static final int BUTTONS_OFFSET = 18;
 
 	private final Text target;
 	private EditBoxWidget editBox;
@@ -78,7 +80,7 @@ public class NoteEditScreen extends Screen {
 	protected void init() {
 		int width = Math.min(MAX_WIDTH, this.width - 40);
 		int x = (this.width - width) / 2;
-		int top = Math.max(50, (this.height - BOX_HEIGHT - 30) / 2);
+		int top = Math.max(50, (this.height - BOX_HEIGHT - BUTTONS_OFFSET - 20) / 2);
 		editBox = new EditBoxWidget(textRenderer, x, top, width, BOX_HEIGHT,
 			Text.translatable("claudecraft.note.screen.placeholder"), Text.translatable("claudecraft.note.screen.text"));
 		editBox.setMaxLength(NoteNetworking.MAX_TEXT_LENGTH);
@@ -86,9 +88,9 @@ public class NoteEditScreen extends Screen {
 		setInitialFocus(editBox);
 		int buttonWidth = (width - 4) / 2;
 		addDrawableChild(ButtonWidget.builder(Text.translatable("claudecraft.note.screen.save"), button -> save())
-			.dimensions(x, top + BOX_HEIGHT + 8, buttonWidth, 20).build());
+			.dimensions(x, top + BOX_HEIGHT + BUTTONS_OFFSET, buttonWidth, 20).build());
 		addDrawableChild(ButtonWidget.builder(ScreenTexts.CANCEL, button -> close())
-			.dimensions(x + buttonWidth + 4, top + BOX_HEIGHT + 8, buttonWidth, 20).build());
+			.dimensions(x + buttonWidth + 4, top + BOX_HEIGHT + BUTTONS_OFFSET, buttonWidth, 20).build());
 	}
 
 	/**

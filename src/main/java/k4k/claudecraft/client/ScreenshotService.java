@@ -71,9 +71,10 @@ public final class ScreenshotService {
 	 * @param pose          agent pose, or {@code null} to capture the player's own view
 	 * @param fov           vertical field of view override in degrees, or {@code null} for the player's setting
 	 * @param warmupMillis  how long to render from the pose before capturing
+	 * @param withHud       capture the finished frame with HUD and screens instead of the bare world
 	 * @param result        completed with the captured image, which the receiver must close
 	 */
-	private record Request(@Nullable Pose pose, @Nullable Double fov, int warmupMillis, CompletableFuture<NativeImage> result) {
+	private record Request(@Nullable Pose pose, @Nullable Double fov, int warmupMillis, boolean withHud, CompletableFuture<NativeImage> result) {
 	}
 
 	/**
@@ -82,10 +83,11 @@ public final class ScreenshotService {
 	 * @param pose         agent pose, or {@code null} for the player's view
 	 * @param fov          field of view override, or {@code null}
 	 * @param warmupMillis how long to render from the pose before capturing (at least {@value #MIN_WARMUP_FRAMES} frames)
+	 * @param withHud      capture what the host sees, HUD and open screens included
 	 * @return future image in the window's resolution; the receiver must close it
 	 */
-	public static CompletableFuture<NativeImage> request(@Nullable Pose pose, @Nullable Double fov, int warmupMillis) {
-		Request request = new Request(pose, fov, Math.max(0, warmupMillis), new CompletableFuture<>());
+	public static CompletableFuture<NativeImage> request(@Nullable Pose pose, @Nullable Double fov, int warmupMillis, boolean withHud) {
+		Request request = new Request(pose, fov, Math.max(0, warmupMillis), withHud, new CompletableFuture<>());
 		QUEUE.add(request);
 		return request.result();
 	}
@@ -119,7 +121,27 @@ public final class ScreenshotService {
 	 * @param client game client
 	 */
 	public static void onWorldRendered(MinecraftClient client) {
-		if (active == null || ++framesRendered < MIN_WARMUP_FRAMES || Util.getMeasuringTimeMs() < captureAfter) {
+		if (active != null && !active.withHud()) {
+			capture(client);
+		}
+	}
+
+	/**
+	 * Called at the end of every frame, once HUD and screens are drawn: captures HUD screenshots.
+	 *
+	 * @param client game client
+	 */
+	public static void onFrameEnd(MinecraftClient client) {
+		if (active != null && active.withHud()) {
+			capture(client);
+		}
+	}
+
+	/**
+	 * Reads the main framebuffer once warm-up is over.
+	 */
+	private static void capture(MinecraftClient client) {
+		if (++framesRendered < MIN_WARMUP_FRAMES || Util.getMeasuringTimeMs() < captureAfter) {
 			return;
 		}
 		try {
@@ -197,7 +219,7 @@ public final class ScreenshotService {
 			camera.setCameraY(stand.getStandingEyeHeight());
 			camera.setLastCameraY(stand.getStandingEyeHeight());
 		}
-		client.options.hudHidden = true;
+		client.options.hudHidden = !request.withHud();
 		client.options.setPerspective(Perspective.FIRST_PERSON);
 		active = request;
 		framesRendered = 0;

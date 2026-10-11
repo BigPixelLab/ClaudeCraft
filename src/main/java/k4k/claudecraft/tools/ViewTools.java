@@ -49,6 +49,7 @@ public final class ViewTools {
 				.integer("width", "Image width in pixels; height follows the window aspect ratio (default from config).", false)
 				.number("fov", "Vertical field of view in degrees (default: the player's FOV setting).", false)
 				.enumeration("format", "Image format (default 'jpeg', smaller).", false, "jpeg", "png")
+				.bool("include_hud", "Only with from='player': capture exactly what the host sees, with HUD, chat and open screens.", false)
 				.integer("warmup_ms", "How long to render from the agent before capturing (default from config, 1000); raise it if parts of the world are missing.", false)
 				.build(),
 			ViewTools::screenshot
@@ -71,7 +72,12 @@ public final class ViewTools {
 		int width = call.optInt("width", config.screenshotWidth);
 		Double fov = call.optDouble("fov");
 		boolean png = "png".equals(call.optString("format", "jpeg"));
-		int warmup = call.optInt("warmup_ms", config.screenshotWarmupMillis);
+		boolean withHud = call.optBool("include_hud", false);
+		if (withHud && !fromPlayer) {
+			throw new ClaudeCraftException("include_hud only works with from='player'.");
+		}
+		// The player's own view needs no warm-up: nothing about the camera changes
+		int warmup = call.optInt("warmup_ms", fromPlayer ? 0 : config.screenshotWarmupMillis);
 		if (fov != null && (fov < 10 || fov > 170)) {
 			throw new ClaudeCraftException("fov must be between 10 and 170 degrees.");
 		}
@@ -92,7 +98,7 @@ public final class ViewTools {
 			GameAccess.server();
 		}
 
-		NativeImage image = GameAccess.await(ScreenshotService.request(pose, fov, warmup));
+		NativeImage image = GameAccess.await(ScreenshotService.request(pose, fov, warmup, withHud));
 		ImageEncoder.Encoded encoded = ImageEncoder.encode(image, width, png, config.jpegQuality);
 		ToolResult result = ToolResult.image(Base64.getEncoder().encodeToString(encoded.data()), encoded.mimeType())
 			.addText(caption + ", " + encoded.width() + "x" + encoded.height());

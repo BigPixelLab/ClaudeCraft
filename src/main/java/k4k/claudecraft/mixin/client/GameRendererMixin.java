@@ -43,6 +43,14 @@ abstract class GameRendererMixin {
 	}
 
 	/**
+	 * Captures screenshots that include the HUD and open screens.
+	 */
+	@Inject(method = "render", at = @At("TAIL"))
+	private void claudecraft$onFrameEnd(float tickDelta, long startTime, boolean tick, CallbackInfo ci) {
+		ScreenshotService.onFrameEnd(client);
+	}
+
+	/**
 	 * Holds off the pause-on-lost-focus while MCP tools need the world running; see {@link PauseControl}.
 	 */
 	@ModifyExpressionValue(

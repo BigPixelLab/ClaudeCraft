@@ -47,6 +47,16 @@ public record ToolCall(McpSession session, JsonObject args) {
 	}
 
 	/**
+	 * @param name     argument name
+	 * @param fallback value when the argument is absent
+	 * @return the boolean argument or {@code fallback}
+	 */
+	public boolean optBool(String name, boolean fallback) {
+		JsonElement value = args.get(name);
+		return value == null || value.isJsonNull() ? fallback : value.getAsBoolean();
+	}
+
+	/**
 	 * @param name argument name
 	 * @return the number argument, or {@code null} when absent
 	 */
